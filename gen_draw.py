@@ -4,49 +4,10 @@ from rdkit import DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
 import numpy as np
 import matplotlib
+from utils import process
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-
-def process(all_sms):
-    all_smiles = []
-    element_table = ["Cl", "Br"]
-    for i in range(len(all_sms)):
-        sms = all_sms[i]
-        smiles = []
-        j = 0
-        while j < len(sms):
-            sms1 = []
-            if sms[j] == "[":
-                sms1.append(sms[j])
-                j = j + 1
-                while sms[j] != "]":
-                    sms1.append(sms[j])
-                    j = j + 1
-                sms1.append(sms[j])
-                sms2 = ''.join(sms1)
-                smiles.append(sms2)
-                j = j + 1
-            else:
-                sms1.append(sms[j])
-
-                if j + 1 < len(sms):
-                    sms1.append(sms[j + 1])
-                    sms2 = ''.join(sms1)
-                else:
-                    sms1.insert(0, sms[j - 1])
-                    sms2 = ''.join(sms1)
-
-                if sms2 not in element_table:
-                    smiles.append(sms[j])
-                    j = j + 1
-                else:
-                    smiles.append(sms2)
-                    j = j + 2
-
-        all_smiles.append(list(smiles))
-    return all_smiles
 
 
 def getfp(sm_file):
