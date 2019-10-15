@@ -1,1 +1,1 @@
-# Convolutional-neural-networks-for-the-design-and-analysis-of-non-fullerene-acceptors
+# Convolutional neural networks for the design and analysis of non fullerene acceptors
