@@ -25,14 +25,13 @@ class Convlayer(nn.Module):
         out = self.glu(y)
         out = self.dropout(out)
         if self.trans is not None:
-            x = self.trans(x)
+            x=self.trans(x)
         return out + x
 
 
 class Encoder(nn.Module):
     def __init__(self, num_inputs, num_channels, kernel_size=3, dropout=0.2):
         super(Encoder, self).__init__()
-
         layers = []
         num_levels = len(num_channels)
         for i in range(num_levels):
@@ -51,7 +50,6 @@ class Encoder(nn.Module):
 class NNet(nn.Module):
     def __init__(self, n_in, n_out, hide=(64, 64, 8)):
         super(NNet, self).__init__()
-
         self.n_hide = len(hide)
         self.fcs = nn.ModuleList([weight_norm(nn.Linear(n_in, hide[i] * 2)) if i == 0 else
                                   weight_norm(nn.Linear(hide[i - 1], n_out)) if i == self.n_hide else
@@ -72,19 +70,18 @@ class NNet(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, emb_size, encoder_out, output_size):
         super(Decoder, self).__init__()
-
-        self.linear0 = weight_norm(nn.Linear(encoder_out, output_size))
-        self.linear1 = NNet(n_in=emb_size, n_out=output_size, hide=(encoder_out * 2, encoder_out * 2, encoder_out))
+        self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(encoder_out * 2, encoder_out * 2, encoder_out))
+        self.linear1 = weight_norm(nn.Linear(encoder_out, output_size))
         self.softmax = nn.Softmax(dim=1)
         self.atten = None
         self.init_weights()
 
     def init_weights(self):
-        self.linear0.weight.data.normal_(0, 0.01)
+        self.linear1.weight.data.normal_(0, 0.01)
 
     def forward(self, emb, v):
-        v = self.linear0(v)
-        h = self.linear1(emb)
+        h = self.linear0(emb)
+        v = self.linear1(v)
         a = self.softmax((v * h).masked_fill(emb[:,:,:1] == 0, float('-inf')))
         self.atten = a
         out = torch.sum(a * h, 1)
@@ -94,7 +91,6 @@ class Decoder(nn.Module):
 class PRED(nn.Module):
     def __init__(self, input_size, dic_size, output_size, num_channels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(PRED, self).__init__()
-
         self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
         self.encoder = Encoder(input_size, num_channels, kernel_size, dropout=dropout)
@@ -102,8 +98,7 @@ class PRED(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        initrange = 0.1
-        self.emb.weight.data.uniform_(-initrange, initrange)
+        self.emb.weight.data.uniform_(-0.1, 0.1)
 
     def forward(self, input):
         emb = self.drop(self.emb(input))
