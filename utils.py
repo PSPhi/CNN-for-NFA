@@ -109,5 +109,5 @@ if __name__ == "__main__":
 
     all_data = TensorDataset(torch.LongTensor(inputs), torch.FloatTensor(targets))
     train_data, vali_data, test_data = all_data[:-4000],all_data[-4000:-2000],all_data[-2000:]
-    torch.save([train_data, vali_data, test_data], "results/saved_models/opv_data.pt")
+    torch.save([train_data, vali_data, test_data], "data/opv_data.pt")
     print(inputs[-1], targets[-1])
