@@ -64,7 +64,7 @@ def sample(idx2word, smi, num_samples):
     lss = 0
     for i in range(num_samples):
         input = torch.ones(1, 1, dtype=torch.long).cuda()
-        word = '&'
+        word = ''
         while word[-1] != '\n':
             output = model(input)
             final_output = output.contiguous().view(-1, n_words)
@@ -72,10 +72,10 @@ def sample(idx2word, smi, num_samples):
             input = torch.cat((input, word_id), dim=1)
             word += idx2word[word_id.item()]
 
-        if bool(Chem.MolFromSmiles(word[1:])):
+        if bool(Chem.MolFromSmiles(word)):
             n += 1
-            if word[1:] not in smi and word[1:] not in ss:
-                ss += [word[1:]]
+            if word not in smi and word not in ss:
+                ss += [word]
         if i != 0 and i % 10000 == 0:
             print(len(ss) - lss)
             lss = len(ss)
