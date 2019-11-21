@@ -94,7 +94,7 @@ if __name__ == "__main__":
     test_iter = DataLoader(test_data, args.batch_size, shuffle=False)
     n_words = len(word2idx)
 
-    model = GEN(args.emsize, n_words, n_words, hid_size=args.nhid, n_levels=args.lvels,
+    model = GEN(args.emsize, n_words, n_words, hid_size=args.nhid, n_levels=args.levels,
                 kernel_size=args.ksize, emb_dropout=args.emb_dropout, dropout=args.dropout )
     model.cuda()
 

@@ -13,11 +13,9 @@ def evaluate(data_iter, args):
     total_loss = 0
 
     for data, label in data_iter:
-        targets = label[:, args.property_n:args.property_n + 1]
-        inputs = data[:, 1:-1]
-        if args.cuda:
-            targets = targets.cuda()
-            inputs = inputs.cuda()
+        targets = label[:, args.property_n:args.property_n + 1].cuda()
+        inputs = data[:, 1:-1].cuda()
+
         outputs = model(inputs)
         loss = criterion(outputs, targets)
         total_loss += loss.item()
@@ -81,11 +79,8 @@ if __name__ == "__main__":
             model.train()
             total_loss = 0
             for data, label in train_iter:
-                targets = label[:, args.property_n:args.property_n + 1]
-                inputs = data[:, 1:-1]
-                if args.cuda:
-                    targets = targets.cuda()
-                    inputs = inputs.cuda()
+                targets = label[:, args.property_n:args.property_n + 1].cuda()
+                inputs = data[:, 1:-1].cuda()
                 optimizer.zero_grad()
                 outputs = model(inputs)
 

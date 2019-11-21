@@ -19,12 +19,12 @@ def tok(ms, word2idx):
     for smiles in all_smiles:
         i += 1
         id = []
-        words = ['&'] + smiles
+        words = smiles
 
-        if len(words) < 142:
+        if len(words) < 141:
             for word in words:
                 id += [word2idx[word]]
-            while len(id) < 142:
+            while len(id) < 141:
                 id += [0]
 
             all_ids.append(id)
@@ -42,7 +42,7 @@ def predict(ms, pt_path):
     out = []
     i = 0
     for input in data.unsqueeze(1):
-        out += [model(input[:, 1:-1]).detach().item()]
+        out += [model(input[:, :-1]).detach().item()]
         i += 1
     return out
 
@@ -75,9 +75,9 @@ if __name__ == '__main__':
         ms = f.readlines()[:10000]
         fps = getfp(ms)
 
-    h_pred = predict(ms, "results/saved_models/50pred.pt")
-    l_pred = predict(ms, "results/saved_models/51pred.pt")
-    p_pred = predict(ms, "results/saved_models/54pred.pt")
+    h_pred = predict(ms, "results/saved_models/50pre.pt")
+    l_pred = predict(ms, "results/saved_models/51pre.pt")
+    p_pred = predict(ms, "results/saved_models/54pre.pt")
 
     draw(h_pred, l_pred, p_pred, x_range=(-7.4, -5.5), y_range=(-4.9, -1.8),
          label_x='$HOMO(eV)$', label_y='$LUMO(eV)$', label_z='PCE(%)', save_name='results/saved_models/figure7-1.eps')

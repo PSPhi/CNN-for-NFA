@@ -78,7 +78,7 @@ class PreEncoder(nn.Module):
             dilation_size = 2 ** i
             in_channels = num_inputs if i == 0 else num_channels[i - 1]
             out_channels = num_channels[i]
-            layers += [Convlayer(in_channels, out_channels, kernel_size, stride=1,
+            layers += [ConvLayer(in_channels, out_channels, kernel_size, stride=1,
                                  dilation=dilation_size,padding=dilation_size, dropout=dropout)]
 
         self.network = nn.Sequential(*layers)
@@ -130,7 +130,7 @@ class PreDecoder(nn.Module):
 
 class PRE(nn.Module):
     def __init__(self, input_size, dic_size, output_size, num_channels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
-        super(PRED, self).__init__()
+        super(PRE, self).__init__()
         self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
         self.encoder = PreEncoder(input_size, num_channels, kernel_size, dropout=dropout)
