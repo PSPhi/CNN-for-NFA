@@ -7,34 +7,8 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from model_gen import *
+from model import *
 from rdkit import Chem
-
-
-def train():
-    global train_iter
-    model.train()
-    total_loss = 0
-    start_time = time.time()
-    for data, label in train_iter:
-        targets = data[:, 1:].cuda()
-        inputs = data[:, :-1].cuda()
-        optimizer.zero_grad()
-        output = model(inputs)
-
-        final_output = output.contiguous().view(-1, n_words)
-        final_target = targets.contiguous().view(-1)
-
-        loss = criterion(final_output, final_target)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-    cur_loss = total_loss / len(train_iter)
-    elapsed = time.time() - start_time
-    print('| epoch {:3d} | ms/batch {:5.4f} | train loss {:5.6f} |'.format
-          (epoch, elapsed * 1000 / len(train_iter), cur_loss))
 
 
 def evaluate(data_iter):
@@ -88,8 +62,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generative Modeling')
     parser.add_argument('--batch_size', type=int, default=32,
                         metavar='N', help='batch size (default: 32)')
-    parser.add_argument('--cuda', action='store_false',
-                        help='use CUDA (default: True)')
     parser.add_argument('--dropout', type=float, default=0.2,
                         help='dropout applied to layers (default: 0.2)')
     parser.add_argument('--emb_dropout', type=float, default=0.1,
@@ -114,10 +86,6 @@ if __name__ == "__main__":
 
     print(args)
 
-    if torch.cuda.is_available():
-        if not args.cuda:
-            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-
     torch.manual_seed(1024)
     word2idx, idx2word = torch.load("data/opv_dic.pt")
     train_data, val_data, test_data = torch.load("data/opv_data.pt")
@@ -128,9 +96,7 @@ if __name__ == "__main__":
 
     model = GEN(args.emsize, n_words, n_words, hid_size=args.nhid, n_levels=args.lvels,
                 kernel_size=args.ksize, emb_dropout=args.emb_dropout, dropout=args.dropout )
-
-    if args.cuda:
-        model.cuda()
+    model.cuda()
 
     criterion = nn.CrossEntropyLoss()
     optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr)
@@ -139,14 +105,34 @@ if __name__ == "__main__":
     best_vloss = 100
     try:
         for epoch in range(1, args.epochs + 1):
-            epoch_start_time = time.time()
-            train()
+            start_time = time.time()
+            model.train()
+            total_loss = 0
+
+            for data, label in train_iter:
+                targets = data[:, 1:].cuda()
+                inputs = data[:, :-1].cuda()
+                optimizer.zero_grad()
+                output = model(inputs)
+
+                final_output = output.contiguous().view(-1, n_words)
+                final_target = targets.contiguous().view(-1)
+
+                loss = criterion(final_output, final_target)
+                loss.backward()
+                optimizer.step()
+
+                total_loss += loss.item()
+
+            print('| epoch: {:3d} | train loss: {:5.6f} '.format
+                    (epoch, total_loss / len(train_iter)))
+
             val_loss = evaluate(val_iter)
             scheduler.step(val_loss)
 
             print('-' * 89)
-            print('| end of epoch {:3d} | time: {:5.4f}s | valid loss {:5.6f} | valid ppl {:8.4f}'.format
-                  (epoch, (time.time() - epoch_start_time), val_loss, math.exp(val_loss)))
+            print('| time: {:5.4f}s | valid loss: {:5.6f} | valid ppl: {:8.4f}'.format
+                  ((time.time() - start_time), val_loss, math.exp(val_loss)))
             print('-' * 89)
 
             if val_loss < best_vloss:
@@ -164,7 +150,7 @@ if __name__ == "__main__":
     print('| End of training | test loss {:5.4f} | test ppl {:8.4f}'.format(test_loss, math.exp(test_loss)))
     print('=' * 89)
 
-    with open('/data/home/psp/TCN/non-fullerene/data/smi_c.txt', 'r') as smi:
+    with open('data/smi_c.txt', 'r') as smi:
         smiles = smi.readlines()
     ss = sample(idx2word, smiles, num_samples=100000)
     with open("results/" + str(args.levels) + 'sample.txt', 'w') as f:

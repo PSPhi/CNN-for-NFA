@@ -5,32 +5,7 @@ from torch import nn
 from torch import optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from model_pre import *
-
-
-def train(args):
-    global train_iter
-    model.train()
-    total_loss = 0
-    start_time = time.time()
-    for data, label in train_iter:
-        targets = label[:, args.property_n:args.property_n + 1]
-        inputs = data[:, 1:-1]
-        if args.cuda:
-            targets = targets.cuda()
-            inputs = inputs.cuda()
-        optimizer.zero_grad()
-        outputs = model(inputs)
-
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-
-    cur_loss = total_loss / len(train_iter)
-    elapsed = time.time() - start_time
-    print('| epoch {:3d} | ms/batch {:5.4f} | loss {:5.6f} |'.format
-          (epoch, elapsed * 1000 / len(train_iter), cur_loss))
+from model import *
 
 
 def evaluate(data_iter, args):
@@ -58,8 +33,6 @@ if __name__ == "__main__":
                         help='the numerical order of property (default: 0,1,2,3,4,5)')
     parser.add_argument('--batch_size', type=int, default=32, metavar='N',
                         help='batch size (default: 32)')
-    parser.add_argument('--cuda', action='store_false',
-                        help='use CUDA (default: True)')
     parser.add_argument('--dropout', type=float, default=0.2,
                         help='dropout applied to layers (default: 0.2)')
     parser.add_argument('--emb_dropout', type=float, default=0.1,
@@ -84,10 +57,6 @@ if __name__ == "__main__":
 
     print(args)
 
-    if torch.cuda.is_available():
-        if not args.cuda:
-            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-
     torch.manual_seed(1024)
     word2idx, idx2word = torch.load("data/opv_dic.pt")
     train_data, val_data, test_data = torch.load("data/opv_data.pt")
@@ -97,11 +66,9 @@ if __name__ == "__main__":
 
     n_words = len(word2idx)
     num_channels = [args.nhid] * (args.levels - 1)+[args.emsize]
-    model = PRED(args.emsize, n_words, 1, num_channels,
+    model = PRE(args.emsize, n_words, 1, num_channels,
                  kernel_size=args.ksize, emb_dropout=args.emb_dropout,  dropout=args.dropout)
-
-    if args.cuda:
-        model.cuda()
+    model.cuda()
 
     criterion = nn.MSELoss()
     optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr)
@@ -111,13 +78,29 @@ if __name__ == "__main__":
     try:
         for epoch in range(1, args.epochs + 1):
             start_time = time.time()
-            train(args)
+            model.train()
+            total_loss = 0
+            for data, label in train_iter:
+                targets = label[:, args.property_n:args.property_n + 1]
+                inputs = data[:, 1:-1]
+                if args.cuda:
+                    targets = targets.cuda()
+                    inputs = inputs.cuda()
+                optimizer.zero_grad()
+                outputs = model(inputs)
+
+                loss = criterion(outputs, targets)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+
+            print('| epoch: {:3d} | train loss: {:5.6f} |'.format(epoch, total_loss / len(train_iter)))
+
             val_loss = evaluate(val_iter, args)
             scheduler.step(val_loss)
 
             print('-' * 89)
-            print('| end of epoch {:3d} | time: {:5.4f}s | valid loss {:5.6f} |'.format
-                  (epoch, (time.time() - start_time), val_loss))
+            print('| time: {:5.4f}s | valid loss: {:5.6f} |'.format((time.time() - start_time), val_loss))
             print('-' * 89)
 
             if val_loss < best_vloss:

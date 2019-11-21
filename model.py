@@ -4,12 +4,13 @@ import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 
 
-class Convlayer(nn.Module):
+class ConvLayer(nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
-        super(Convlayer, self).__init__()
+        super(ConvLayer, self).__init__()
         self.conv = weight_norm(nn.Conv1d(n_inputs, n_outputs * 2, kernel_size,
-                                          stride=stride, padding=padding, dilation=dilation))
-
+                              stride=stride, padding=padding, dilation=dilation))
+        self.dilation = dilation
+        self.padding = padding
         self.glu = nn.GLU(dim=1)
         self.dropout = nn.Dropout(dropout)
         self.trans = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
@@ -22,16 +23,55 @@ class Convlayer(nn.Module):
 
     def forward(self, x):
         y = self.conv(x)
-        out = self.glu(y)
+        out = self.glu(y[:,:,:-self.padding].contiguous()) if self.dilation!=self.padding else self.glu(y)
         out = self.dropout(out)
         if self.trans is not None:
-            x=self.trans(x)
+            x = self.trans(x)
         return out + x
 
 
-class Encoder(nn.Module):
+class GenEncoder(nn.Module):
+    def __init__(self, input_size,hid_size, n_levels,kernel_size=3, dropout=0.2):
+        super(GenEncoder, self).__init__()
+        layers = []
+        for i in range(n_levels):
+            dilation_size = 2 ** i
+            if i==0:
+                layers += [ConvLayer(input_size, hid_size, kernel_size, stride=1, dilation=dilation_size,
+                                     padding=(kernel_size - 1) * dilation_size, dropout=dropout)]
+            else:
+                layers += [ConvLayer(hid_size, hid_size, kernel_size, stride=1, dilation=dilation_size,
+                                 padding=(kernel_size - 1) * dilation_size, dropout=dropout)]
+
+        self.network = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class GEN(nn.Module):
+    def __init__(self, input_size, dic_size, output_size, hid_size=256, n_levels=5, kernel_size=3, emb_dropout=0.1, dropout=0.2):
+        super(GEN, self).__init__()
+        self.emb = nn.Embedding(dic_size, input_size)
+        self.drop = nn.Dropout(emb_dropout)
+        self.linear = nn.Linear(input_size, hid_size,bias=False)
+        self.encoder = GenEncoder( input_size,hid_size, n_levels, kernel_size, dropout=dropout)
+        self.decoder = nn.Linear(hid_size, output_size)
+        self.init_weights()
+
+    def init_weights(self):
+        self.emb.weight.data.uniform_(-0.1, 0.1)
+
+    def forward(self, input):
+        emb = self.drop(self.emb(input))
+        y = self.encoder(emb.transpose(1, 2))
+        o = self.decoder(y.transpose(1, 2))
+        return o.contiguous()
+
+
+class PreEncoder(nn.Module):
     def __init__(self, num_inputs, num_channels, kernel_size=3, dropout=0.2):
-        super(Encoder, self).__init__()
+        super(PreEncoder, self).__init__()
         layers = []
         num_levels = len(num_channels)
         for i in range(num_levels):
@@ -67,9 +107,9 @@ class NNet(nn.Module):
         return x
 
 
-class Decoder(nn.Module):
+class PreDecoder(nn.Module):
     def __init__(self, emb_size, encoder_out, output_size):
-        super(Decoder, self).__init__()
+        super(PreDecoder, self).__init__()
         self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(encoder_out * 2, encoder_out * 2, encoder_out))
         self.linear1 = weight_norm(nn.Linear(encoder_out, output_size))
         self.softmax = nn.Softmax(dim=1)
@@ -88,13 +128,13 @@ class Decoder(nn.Module):
         return out
 
 
-class PRED(nn.Module):
+class PRE(nn.Module):
     def __init__(self, input_size, dic_size, output_size, num_channels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(PRED, self).__init__()
         self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
-        self.encoder = Encoder(input_size, num_channels, kernel_size, dropout=dropout)
-        self.decoder = Decoder(input_size, num_channels[-1], output_size)
+        self.encoder = PreEncoder(input_size, num_channels, kernel_size, dropout=dropout)
+        self.decoder = PreDecoder(input_size, num_channels[-1], output_size)
         self.init_weights()
 
     def init_weights(self):
