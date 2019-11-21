@@ -34,12 +34,14 @@ def tok(ms, word2idx):
     return torch.LongTensor(all_ids)
 
 
-def predict(data, pt_path):
+def predict(ms, pt_path):
+    word2idx, idx2word = torch.load("data/opv_dic.pt")
+    data = tok(ms, word2idx)
     model = torch.load(pt_path, map_location=torch.device('cpu'))
     model.eval()
     out = []
     i = 0
-    for input in data:
+    for input in data.unsqueeze(1):
         out += [model(input[:, 1:-1]).detach().item()]
         i += 1
     return out
@@ -73,17 +75,14 @@ if __name__ == '__main__':
         ms = f.readlines()[:10000]
         fps = getfp(ms)
 
-    word2idx, idx2word = torch.load("data/opv_dic.pt")
-    sample_data = tok(ms, word2idx)
-
-    h_pred = predict(sample_data.unsqueeze(1), "results/saved_models/50pred.pt")
-    l_pred = predict(sample_data.unsqueeze(1), "results/saved_models/51pred.pt")
-    p_pred = predict(sample_data.unsqueeze(1), "results/saved_models/54pred.pt")
+    h_pred = predict(ms, "results/saved_models/50pred.pt")
+    l_pred = predict(ms, "results/saved_models/51pred.pt")
+    p_pred = predict(ms, "results/saved_models/54pred.pt")
 
     draw(h_pred, l_pred, p_pred, x_range=(-7.4, -5.5), y_range=(-4.9, -1.8),
          label_x='$HOMO(eV)$', label_y='$LUMO(eV)$', label_z='PCE(%)', save_name='results/saved_models/figure7-1.eps')
 
-    ori_df = pd.read_csv('/data/home/psp/TCN/non-fullerene/data/opv.csv')
+    ori_df = pd.read_csv('data/opv.csv')
     with open('data/smi_c.txt', 'r') as f:
         ms0 = [m[:-1] for m in f.readlines()]
         fps0 = getfp(ms0)
