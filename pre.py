@@ -63,9 +63,8 @@ if __name__ == "__main__":
     test_iter = DataLoader(test_data, 1, shuffle=False)
 
     n_words = len(word2idx)
-    num_channels = [args.nhid] * (args.levels - 1)+[args.emsize]
-    model = PRE(args.emsize, n_words, 1, num_channels,
-                 kernel_size=args.ksize, emb_dropout=args.emb_dropout,  dropout=args.dropout)
+    model = PRE(args.emsize, n_words, 1, hid_size=args.nhid, n_levels=args.levels,
+                kernel_size=args.ksize, emb_dropout=args.emb_dropout,  dropout=args.dropout)
     model.cuda()
 
     criterion = nn.MSELoss()

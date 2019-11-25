@@ -3,14 +3,15 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 
-
+# The encoder layers of generative and prediction models
 class ConvLayer(nn.Module):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
+    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2, model='Gen'):
         super(ConvLayer, self).__init__()
         self.conv = weight_norm(nn.Conv1d(n_inputs, n_outputs * 2, kernel_size,
                               stride=stride, padding=padding, dilation=dilation))
         self.dilation = dilation
         self.padding = padding
+        self.model = model
         self.glu = nn.GLU(dim=1)
         self.dropout = nn.Dropout(dropout)
         self.trans = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
@@ -23,39 +24,40 @@ class ConvLayer(nn.Module):
 
     def forward(self, x):
         y = self.conv(x)
-        out = self.glu(y[:,:,:-self.padding].contiguous()) if self.dilation!=self.padding else self.glu(y)
+        out = self.glu(y[:,:,:-self.padding].contiguous()) if self.model=='Gen' else self.glu(y)
         out = self.dropout(out)
         if self.trans is not None:
             x = self.trans(x)
         return out + x
 
 
-class GenEncoder(nn.Module):
-    def __init__(self, input_size,hid_size, n_levels,kernel_size=3, dropout=0.2):
-        super(GenEncoder, self).__init__()
+class Encoder(nn.Module):
+    def __init__(self, input_size,hid_size, n_levels,kernel_size=3, dropout=0.2, model='Gen'):
+        super(Encoder, self).__init__()
         layers = []
         for i in range(n_levels):
             dilation_size = 2 ** i
+            padding = (kernel_size-1)*dilation_size if model=='Gen' else dilation_size
+
             if i==0:
-                layers += [ConvLayer(input_size, hid_size, kernel_size, stride=1, dilation=dilation_size,
-                                     padding=(kernel_size - 1) * dilation_size, dropout=dropout)]
+                layers += [ConvLayer(input_size, hid_size, kernel_size, stride=1,
+                                     dilation=dilation_size, padding=padding, dropout=dropout, model=model)]
             else:
-                layers += [ConvLayer(hid_size, hid_size, kernel_size, stride=1, dilation=dilation_size,
-                                 padding=(kernel_size - 1) * dilation_size, dropout=dropout)]
+                layers += [ConvLayer(hid_size, hid_size, kernel_size, stride=1,
+                                     dilation=dilation_size, padding=padding, dropout=dropout, model=model)]
 
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.network(x)
 
-
+# Generative model
 class GEN(nn.Module):
     def __init__(self, input_size, dic_size, output_size, hid_size=256, n_levels=5, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(GEN, self).__init__()
-        self.emb = nn.Embedding(dic_size, input_size)
+        self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
-        self.linear = nn.Linear(input_size, hid_size,bias=False)
-        self.encoder = GenEncoder( input_size,hid_size, n_levels, kernel_size, dropout=dropout)
+        self.encoder = Encoder(input_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Gen')
         self.decoder = nn.Linear(hid_size, output_size)
         self.init_weights()
 
@@ -68,25 +70,7 @@ class GEN(nn.Module):
         o = self.decoder(y.transpose(1, 2))
         return o.contiguous()
 
-
-class PreEncoder(nn.Module):
-    def __init__(self, num_inputs, num_channels, kernel_size=3, dropout=0.2):
-        super(PreEncoder, self).__init__()
-        layers = []
-        num_levels = len(num_channels)
-        for i in range(num_levels):
-            dilation_size = 2 ** i
-            in_channels = num_inputs if i == 0 else num_channels[i - 1]
-            out_channels = num_channels[i]
-            layers += [ConvLayer(in_channels, out_channels, kernel_size, stride=1,
-                                 dilation=dilation_size,padding=dilation_size, dropout=dropout)]
-
-        self.network = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.network(x)
-
-
+# The decoder of prediction model
 class NNet(nn.Module):
     def __init__(self, n_in, n_out, hide=(64, 64, 8)):
         super(NNet, self).__init__()
@@ -127,14 +111,14 @@ class PreDecoder(nn.Module):
         out = torch.sum(a * h, 1)
         return out
 
-
+# The prediction model
 class PRE(nn.Module):
-    def __init__(self, input_size, dic_size, output_size, num_channels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
+    def __init__(self, input_size, dic_size, output_size, hid_size, n_levels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(PRE, self).__init__()
         self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
-        self.encoder = PreEncoder(input_size, num_channels, kernel_size, dropout=dropout)
-        self.decoder = PreDecoder(input_size, num_channels[-1], output_size)
+        self.encoder = Encoder(input_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Pre')
+        self.decoder = PreDecoder(input_size, hid_size, output_size)
         self.init_weights()
 
     def init_weights(self):
