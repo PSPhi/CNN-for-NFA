@@ -107,8 +107,8 @@ if __name__ == "__main__":
     with open("data/smi_c.txt", "w") as f:
         f.writelines(sms)
 
-    train_data = TensorDataset(Inputs[:-4000],torch.LongTensor(lengths[:-4000]),torch.FloatTensor(targets[:-4000]))
-    val_data = TensorDataset(Inputs[-4000:-2000],torch.LongTensor(lengths[-4000:-2000]),torch.FloatTensor(targets[-4000:-2000]))
-    test_data= TensorDataset(Inputs[-2000:], torch.LongTensor(lengths[-2000:]), torch.FloatTensor(targets[-2000:]))
+    train_data = TensorDataset(Inputs[:-4000], torch.FloatTensor(targets[:-4000]))
+    val_data = TensorDataset(Inputs[-4000:-2000], torch.FloatTensor(targets[-4000:-2000]))
+    test_data= TensorDataset(Inputs[-2000:], torch.FloatTensor(targets[-2000:]))
     torch.save([train_data, val_data, test_data], "data/opv_data.pt")
     print(inputs[-1], targets[-1])
