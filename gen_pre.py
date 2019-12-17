@@ -101,13 +101,13 @@ if __name__ == '__main__':
         nn_data.append([ori_df.loc[int(i), s] for s in ['homo','lumo','PCE']])
 
     draw(np.array(h_pred), np.array(nn_data)[:,0], np.array(simi),x_range=(-8, -5), y_range=(-8, -5),
-         label_x='$HOMO_{gen}(eV)', label_y='HOMO_{nn}(eV)', label_z='Similarity(%)', save_name='results/figure8-1.eps')
+         label_x='$HOMO_{gen}(eV)$', label_y='$HOMO_{nn}(eV)$', label_z='Similarity(%)', save_name='results/figure8-1.eps')
 
     draw(np.array(l_pred), np.array(nn_data)[:,1], np.array(simi),x_range=(-6, -2), y_range=(-6, -2),
-         label_x='$LUMO_{gen}(eV)', label_y='LUMO_{nn}(eV)', label_z='Similarity(%)', save_name='results/figure8-2.eps')
+         label_x='$LUMO_{gen}(eV)$', label_y='$LUMO_{nn}(eV)$', label_z='Similarity(%)', save_name='results/figure8-2.eps')
 
     draw(np.array(p_pred), np.array(nn_data)[:, 2], np.array(simi), x_range = (0, 11), y_range = (0, 11),
-    label_x = '$PCE_{gen}(eV)', label_y = 'PCE_{nn}(eV)', label_z = 'Similarity(%)', save_name = 'results/figure8-3.eps')
+    label_x = '$PCE_{gen}(eV)$', label_y = '$PCE_{nn}(eV)$', label_z = 'Similarity(%)', save_name = 'results/figure8-3.eps')
 
 
     dic={"SMILES":ms,"HOMO_pred":h_pred,"LUMO_pred":l_pred,"PCE_pred":p_pred,"Similarity":simi,
