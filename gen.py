@@ -29,10 +29,10 @@ def evaluate(data_iter):
     return total_loss / len(data_iter)
 
 
-def sample(idx2word, smi, num_samples):
+def sample(idx2word, set_smi, num_samples):
     model.eval()
     n_words = len(idx2word)
-    set_mols = [Chem.MolToInchiKey(Chem.MolFromSmiles(smi[i])) for i in range(len(smi))]
+    set_mols = [Chem.MolToInchiKey(Chem.MolFromSmiles(smi)) for smi in set_smi]
     n = 0
     new_mols = []
     new_smiles = []
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     print('=' * 89)
 
     with open('data/smi_c.txt', 'r') as smi:
-        smiles = smi.readlines()
-    new_smiles = sample(idx2word, smiles, num_samples=100000)
+        set_smiles = smi.readlines()
+    new_smiles = sample(idx2word, set_smiles, num_samples=100000)
     with open("results/" + str(args.levels) + 'sample.txt', 'w') as f:
         f.writelines(new_smiles)
