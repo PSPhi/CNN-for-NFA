@@ -32,9 +32,10 @@ def evaluate(data_iter):
 def sample(idx2word, smi, num_samples):
     model.eval()
     n_words = len(idx2word)
-
+    set_mols = [Chem.MolToInchiKey(Chem.MolFromSmiles(smi[i])) for i in range(len(smi))]
     n = 0
-    ss = []
+    new_mols = []
+    new_smiles = []
     lss = 0
     for i in range(num_samples):
         input = torch.ones(1, 1, dtype=torch.long).cuda()
@@ -48,13 +49,15 @@ def sample(idx2word, smi, num_samples):
 
         if bool(Chem.MolFromSmiles(word[1:])):
             n += 1
-            if word[1:] not in smi and word[1:] not in ss:
-                ss += [word[1:]]
+            mol = Chem.MolToInchiKey(Chem.MolFromSmiles(word[1:]))
+            if mol not in set_mols and mol not in new_mols:
+                new_mols += [mol]
+                new_smiles += [word[1:]]
         if i != 0 and i % 10000 == 0:
-            print(len(ss) - lss)
-            lss = len(ss)
+            print(len(new_smiles) - lss)
+            lss = len(new_smiles)
     print(n / num_samples)
-    return ss
+    return new_smiles
 
 
 if __name__ == "__main__":
@@ -152,6 +155,6 @@ if __name__ == "__main__":
 
     with open('data/smi_c.txt', 'r') as smi:
         smiles = smi.readlines()
-    ss = sample(idx2word, smiles, num_samples=100000)
+    new_smiles = sample(idx2word, smiles, num_samples=100000)
     with open("results/" + str(args.levels) + 'sample.txt', 'w') as f:
-        f.writelines(ss)
+        f.writelines(new_smiles)
