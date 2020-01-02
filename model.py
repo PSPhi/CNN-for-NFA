@@ -32,7 +32,7 @@ class ConvLayer(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_size,hid_size, n_levels,kernel_size=3, dropout=0.2, model='Gen'):
+    def __init__(self, input_size, hid_size, n_levels, kernel_size=3, dropout=0.2, model='Gen'):
         super(Encoder, self).__init__()
         layers = []
         for i in range(n_levels):
@@ -53,11 +53,11 @@ class Encoder(nn.Module):
 
 # Generative model
 class GEN(nn.Module):
-    def __init__(self, input_size, dic_size, hid_size=256, n_levels=5, kernel_size=3, emb_dropout=0.1, dropout=0.2):
+    def __init__(self, emb_size, dic_size, hid_size, n_levels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(GEN, self).__init__()
-        self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
+        self.emb = nn.Embedding(dic_size, emb_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
-        self.encoder = Encoder(input_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Gen')
+        self.encoder = Encoder(emb_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Gen')
         self.decoder = nn.Linear(hid_size, dic_size)
         self.init_weights()
 
@@ -92,9 +92,9 @@ class NNet(nn.Module):
 
 
 class PreDecoder(nn.Module):
-    def __init__(self, emb_size, encoder_out, output_size):
+    def __init__(self, emb_size, hid_size, output_size):
         super(PreDecoder, self).__init__()
-        self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(encoder_out * 2, encoder_out * 2, encoder_out))
+        self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(hid_size * 2, hid_size * 2, hid_size))
         self.linear1 = weight_norm(nn.Linear(encoder_out, output_size))
         self.softmax = nn.Softmax(dim=1)
         self.atten = None
@@ -113,12 +113,12 @@ class PreDecoder(nn.Module):
 
 # The prediction model
 class PRE(nn.Module):
-    def __init__(self, input_size, dic_size, output_size, hid_size, n_levels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
+    def __init__(self, emb_size, dic_size, output_size, hid_size, n_levels, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(PRE, self).__init__()
-        self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
+        self.emb = nn.Embedding(dic_size, emb_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
-        self.encoder = Encoder(input_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Pre')
-        self.decoder = PreDecoder(input_size, hid_size, output_size)
+        self.encoder = Encoder(emb_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Pre')
+        self.decoder = PreDecoder(emb_size, hid_size, output_size)
         self.init_weights()
 
     def init_weights(self):
