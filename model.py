@@ -53,12 +53,12 @@ class Encoder(nn.Module):
 
 # Generative model
 class GEN(nn.Module):
-    def __init__(self, input_size, dic_size, output_size, hid_size=256, n_levels=5, kernel_size=3, emb_dropout=0.1, dropout=0.2):
+    def __init__(self, input_size, dic_size, hid_size=256, n_levels=5, kernel_size=3, emb_dropout=0.1, dropout=0.2):
         super(GEN, self).__init__()
         self.emb = nn.Embedding(dic_size, input_size, padding_idx=0)
         self.drop = nn.Dropout(emb_dropout)
         self.encoder = Encoder(input_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Gen')
-        self.decoder = nn.Linear(hid_size, output_size)
+        self.decoder = nn.Linear(hid_size, dic_size)
         self.init_weights()
 
     def init_weights(self):
