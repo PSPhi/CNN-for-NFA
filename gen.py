@@ -18,9 +18,9 @@ def evaluate(data_iter):
     for data, label in data_iter:
         targets = data[:, 1:].cuda()
         inputs = data[:, :-1].cuda()
-        output = model(inputs)
+        outputs = model(inputs)
 
-        final_output = output.contiguous().view(-1, n_words)
+        final_output = outputs.contiguous().view(-1, n_words)
         final_target = targets.contiguous().view(-1)
 
         loss = criterion(final_output, final_target)
@@ -116,9 +116,9 @@ if __name__ == "__main__":
                 targets = data[:, 1:].cuda()
                 inputs = data[:, :-1].cuda()
                 optimizer.zero_grad()
-                output = model(inputs)
+                outputs = model(inputs)
 
-                final_output = output.contiguous().view(-1, n_words)
+                final_output = outputs.contiguous().view(-1, n_words)
                 final_target = targets.contiguous().view(-1)
 
                 loss = criterion(final_output, final_target)

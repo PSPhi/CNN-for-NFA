@@ -9,7 +9,7 @@ from model import *
 
 
 def evaluate(data_iter, args):
-    model.eval()
+    model.eval()s
     total_loss = 0
 
     for data, label in data_iter:

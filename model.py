@@ -97,7 +97,7 @@ class PreDecoder(nn.Module):
         self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(hid_size * 2, hid_size * 2, hid_size))
         self.linear1 = weight_norm(nn.Linear(encoder_out, output_size))
         self.softmax = nn.Softmax(dim=1)
-        self.atten = None
+        #self.atten = None
         self.init_weights()
 
     def init_weights(self):
@@ -107,7 +107,7 @@ class PreDecoder(nn.Module):
         h = self.linear0(emb)
         v = self.linear1(v)
         a = self.softmax((v * h).masked_fill(emb[:,:,:1] == 0, float('-inf')))
-        self.atten = a
+        #self.atten = a
         out = torch.sum(a * h, 1)
         return out
 
