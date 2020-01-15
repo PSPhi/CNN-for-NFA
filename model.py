@@ -59,10 +59,6 @@ class GEN(nn.Module):
         self.drop = nn.Dropout(emb_dropout)
         self.encoder = Encoder(emb_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Gen')
         self.decoder = nn.Linear(hid_size, dic_size)
-        self.init_weights()
-
-    def init_weights(self):
-        self.emb.weight.data.uniform_(-0.1, 0.1)
 
     def forward(self, input):
         emb = self.drop(self.emb(input))
@@ -119,10 +115,6 @@ class PRE(nn.Module):
         self.drop = nn.Dropout(emb_dropout)
         self.encoder = Encoder(emb_size, hid_size, n_levels, kernel_size, dropout=dropout, model='Pre')
         self.decoder = PreDecoder(emb_size, hid_size, output_size)
-        self.init_weights()
-
-    def init_weights(self):
-        self.emb.weight.data.uniform_(-0.1, 0.1)
 
     def forward(self, input):
         emb = self.drop(self.emb(input))
