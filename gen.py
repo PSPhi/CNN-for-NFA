@@ -16,8 +16,12 @@ def evaluate(data_iter):
     total_loss = 0
 
     for data, label in data_iter:
-        targets = data[:, 1:].cuda()
-        inputs = data[:, :-1].cuda()
+        targets = data[:, 1:]
+        inputs = data[:, :-1]
+        if torch.cuda.is_available()==True:
+            targets=targets.cuda()
+            inputs=inputs.cuda()
+
         outputs = model(inputs)
 
         final_output = outputs.contiguous().view(-1, n_words)
@@ -38,7 +42,10 @@ def sample(idx2word, set_smi, num_samples):
     new_smiles = []
     lss = 0
     for i in range(num_samples):
-        input = torch.ones(1, 1, dtype=torch.long).cuda()
+        input = torch.ones(1, 1, dtype=torch.long)
+        if torch.cuda.is_available()==True:
+            input=input.cuda()
+        
         word = '&'
         while word[-1] != '\n':
             output = model(input)
@@ -99,7 +106,8 @@ if __name__ == "__main__":
 
     model = GEN(args.emsize, n_words, hid_size=args.nhid, n_levels=args.levels,
                 kernel_size=args.ksize, emb_dropout=args.emb_dropout, dropout=args.dropout )
-    model.cuda()
+    if torch.cuda.is_available()==True:
+        model.cuda()
 
     criterion = nn.CrossEntropyLoss()
     optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr)
@@ -113,8 +121,12 @@ if __name__ == "__main__":
             total_loss = 0
 
             for data, label in train_iter:
-                targets = data[:, 1:].cuda()
-                inputs = data[:, :-1].cuda()
+                targets = data[:, 1:]
+                inputs = data[:, :-1]
+                if torch.cuda.is_available()==True:
+                    targets=targets.cuda()
+                    inputs=inputs.cuda()
+
                 optimizer.zero_grad()
                 outputs = model(inputs)
 
@@ -140,7 +152,7 @@ if __name__ == "__main__":
 
             if val_loss < best_vloss:
                 print('Save model!\n')
-                torch.save( model.state_dict(), "results/saved_models/" + str(args.levels) + args.save_name)
+                torch.save(model.state_dict(), "results/saved_models/" + str(args.levels) + args.save_name)
                 best_vloss = val_loss
 
     except KeyboardInterrupt:

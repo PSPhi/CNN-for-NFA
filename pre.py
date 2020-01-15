@@ -9,12 +9,15 @@ from model import *
 
 
 def evaluate(data_iter, args):
-    model.eval()s
+    model.eval()
     total_loss = 0
 
     for data, label in data_iter:
-        targets = label[:, args.property_n:args.property_n + 1].cuda()
-        inputs = data[:, 1:-1].cuda()
+        targets = label[:, args.property_n:args.property_n + 1]
+        inputs = data[:, 1:-1]
+        if torch.cuda.is_available()==True:
+            targets=targets.cuda()
+            inputs=inputs.cuda()
 
         outputs = model(inputs)
         loss = criterion(outputs, targets)
@@ -65,7 +68,9 @@ if __name__ == "__main__":
     n_words = len(word2idx)
     model = PRE(args.emsize, n_words, 1, hid_size=args.nhid, n_levels=args.levels,
                 kernel_size=args.ksize, emb_dropout=args.emb_dropout,  dropout=args.dropout)
-    model.cuda()
+    
+    if torch.cuda.is_available()==True:
+        model.cuda()
 
     criterion = nn.MSELoss()
     optimizer = getattr(optim, args.optim)(model.parameters(), lr=args.lr)
@@ -78,8 +83,11 @@ if __name__ == "__main__":
             model.train()
             total_loss = 0
             for data, label in train_iter:
-                targets = label[:, args.property_n:args.property_n + 1].cuda()
-                inputs = data[:, 1:-1].cuda()
+                targets = label[:, args.property_n:args.property_n + 1]
+                inputs = data[:, 1:-1]
+                if torch.cuda.is_available()==True:
+                    targets=targets.cuda()
+                    inputs=inputs.cuda()
                 optimizer.zero_grad()
                 outputs = model(inputs)
 

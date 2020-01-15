@@ -91,7 +91,7 @@ class PreDecoder(nn.Module):
     def __init__(self, emb_size, hid_size, output_size):
         super(PreDecoder, self).__init__()
         self.linear0 = NNet(n_in=emb_size, n_out=output_size, hide=(hid_size * 2, hid_size * 2, hid_size))
-        self.linear1 = weight_norm(nn.Linear(encoder_out, output_size))
+        self.linear1 = weight_norm(nn.Linear(hid_size, output_size))
         self.softmax = nn.Softmax(dim=1)
         #self.atten = None
         self.init_weights()
