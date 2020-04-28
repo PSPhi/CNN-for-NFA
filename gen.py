@@ -83,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument('--emsize', type=int, default=32,
                         help='size of word embeddings (default: 32)')
     parser.add_argument('--levels', type=int, default=4,
-                        help='# of levels (default: 4)')
+                        help='levels (default: 4)')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='initial learning rate (default: 0.001)')
     parser.add_argument('--nhid', type=int, default=256,
