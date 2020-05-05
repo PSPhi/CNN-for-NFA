@@ -15,20 +15,22 @@ def evaluate(data_iter):
     model.eval()
     total_loss = 0
 
-    for data, label in data_iter:
-        targets = data[:, 1:]
-        inputs = data[:, :-1]
-        if torch.cuda.is_available()==True:
-            targets=targets.cuda()
-            inputs=inputs.cuda()
+    with torch.no_grad():
 
-        outputs = model(inputs)
+        for data, label in data_iter:
+            targets = data[:, 1:]
+            inputs = data[:, :-1]
+            if torch.cuda.is_available()==True:
+                targets=targets.cuda()
+                inputs=inputs.cuda()
 
-        final_output = outputs.contiguous().view(-1, n_words)
-        final_target = targets.contiguous().view(-1)
+            outputs = model(inputs)
 
-        loss = criterion(final_output, final_target)
-        total_loss += loss.item()
+            final_output = outputs.contiguous().view(-1, n_words)
+            final_target = targets.contiguous().view(-1)
+
+            loss = criterion(final_output, final_target)
+            total_loss += loss.item()
 
     return total_loss / len(data_iter)
 
