@@ -11,18 +11,20 @@ from model import *
 def evaluate(data_iter, args):
     model.eval()
     total_loss = 0
+    
+    with torch.no_grad():
 
-    for data, label in data_iter:
-        targets = label[:, args.property_n:args.property_n + 1]
-        inputs = data[:, 1:-1]
-        if torch.cuda.is_available()==True:
-            targets=targets.cuda()
-            inputs=inputs.cuda()
+        for data, label in data_iter:
+            targets = label[:, args.property_n:args.property_n + 1]
+            inputs = data[:, 1:-1]
+            if torch.cuda.is_available()==True:
+                targets=targets.cuda()
+                inputs=inputs.cuda()
 
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        total_loss += loss.item()
-#        print(model.decoder.atten,outputs,targets)
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            total_loss += loss.item()
+#           print(model.decoder.atten,outputs,targets)
 
     return total_loss / len(data_iter)
 
